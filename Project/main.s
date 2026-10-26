@@ -172,3 +172,5 @@ colors_end:
 	oam: .res $100					; reserve 256 bytes OAM
 
   .segment "TILES"
+
+  ;if you read this you are gay
