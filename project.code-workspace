@@ -1,0 +1,12 @@
+{
+    "folders": [
+        {
+            "path": ".",
+        },
+    ],
+    "settings": 
+        {
+            "Mesen": "C:\\Mesen.exe",
+            "cc65": "C:\\cc65-snapshot-win32\\bin"
+        }
+}

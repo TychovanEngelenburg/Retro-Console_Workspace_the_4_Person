@@ -1,0 +1,29 @@
+IF ANYONE STARTS WORKING ON A TODO ADD YOUR NAME AT THE END SO WE DONT HAVE 2 PEOPLE DOING THE SAME THING
+IDEAS:
+
+Figure something out for low res images (maybe a special character that represents the start of an image and possibly use the second pattern table to store images and also do it in a seperate file)
+(LIAM) Make editor (on screen keyboard (with light gun))
+
+WIP:
+(DAN) Display indexes only when slides are not scrolling
+(DAN) Play woosh sound upon slide transition
+
+DONE:
+(DAN)add audio on slide change
+(arno) "\\" escape sequence for '\'
+(yannick) refactor code: display_current_slide & display_next_slide_nt1, set_attributes & set_attributes_next
+(arno) fix many newlines leading to writing text in atrribute area
+(ismail)next slide button pressed during animation => skip animation
+(dan) Add the current slide number in the bottom right of the screen
+(arno) fix issues caused by too much content on a slide
+(arno) check for CR characters and ignore them
+(YANNICK) fix the issue of only supporting 256 characters
+(DAN) Fix the lightgun
+(YANNICK) CoLoRs MaAaAaN
+(DAN) make a macro to detect "\s" in content.ascii to detect the new page
+(DAN) Add a special tab character (like the \s but than \t for example)
+(DAN) Add slide numbers (for now - single digit)
+(DAN) settings.s change the address declaration to X and Y
+(ismail)Make it so the next slide is saved on the nametable next to it so we can do a small transition animation using the scroll
+(ismail)Make it scroll
+(ismail)Make scroll speed configurable in settings (speed 0 => skip animation)

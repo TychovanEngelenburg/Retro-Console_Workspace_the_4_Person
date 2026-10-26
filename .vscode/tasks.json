@@ -1,0 +1,45 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "create Build folder",
+			"type": "shell",
+			"command": "if (-not (Test-Path \"Build\")) { mkdir \"Build\" }",
+			"group": "build"
+		},
+		{
+			"label": "Assemble and Link NES",
+			"type": "shell",
+			"command": "${config:cc65}\\ca65.exe",
+			"args": [
+				"${relativeFile}",
+				"-g",
+				"-o",
+				"Build/${fileBasenameNoExtension}.o"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"dependsOn": "create Build folder",
+			"detail": "Assembles an NES project using cc65."
+		},
+		{
+			"label": "Build NES",
+			"type": "shell",
+			"command": "${config:cc65}\\ld65.exe",
+			"args": [
+				"-C",
+				"${relativeFileDirname}\\memory.cfg",
+				"-o",
+				"Build\\${fileBasenameNoExtension}.nes",
+				"Build\\${fileBasenameNoExtension}.o",
+				"--dbgfile",
+				"Build\\${fileBasenameNoExtension}.dbg"
+			],
+			"group": "build",
+			"dependsOn": "Assemble and Link NES",
+			"detail": "Links the NES object file to create a ROM."
+		}
+	]
+}
