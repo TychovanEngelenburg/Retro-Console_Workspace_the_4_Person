@@ -30,11 +30,48 @@
 ; Zero page variables
 ; =============================
 
-; Bits to button order: A   B  Select  Start  Up  Down  Left  Right (carry: held)
-buttons     = $00   ; Buttons held this frame
-buttons_old = $01   ; Buttons held the previous frame
+; Rectangle A: top-left X, top-left Y, width, height
+rectAX = $00
+rectAY = $01
+rectAWidth = $02
+rectAHeight = $03
 
-color_index = $02   ; Which color entry is selected
+; Rectangle B: top-left X, top-left Y, width, height
+rectBX = $04
+rectBY = $05
+rectBWidth = $06
+rectBHeight = $07
+
+; Circle A: centre X, centre Y, radius
+circleAX = $08
+circleAY = $09
+circleARadius = $0A
+
+; Circle B: centre X, centre Y, radius
+circleBX = $0B
+circleBY = $0C
+circleBRadius = $0D
+
+; 8 bit multiplication resulting in 16 bit multiplicand
+factorA = $0E
+factorB = $0F
+productLower8 = $10
+productHigher8 = $11
+multiplicandLower8 = $12
+multiplicandHigher8 = $13
+
+; Circle collision preparations
+circleDX = $14
+circleDY = $15
+circleRadiusSum = $16
+circleDistanceLow = $17
+circleDistanceHigh = $18
+
+; Bits to button order: A   B  Select  Start  Up  Down  Left  Right (carry: held)
+buttons     = $19   ; Buttons held this frame
+buttons_old = $1A   ; Buttons held the previous frame
+
+color_index = $1B   ; Which color entry is selected
 
 ; =============================
 ; Startup process
@@ -95,7 +132,184 @@ forever:
 ; =============================
 ; NMI is called at the start of every vblank (period in between drawing frames)
 nmi:
-  
+
+;Collision subroutines
+  CollisionRectangles:
+      ; A right edge vs B left edge
+      lda rectAX
+      clc
+      adc rectAWidth
+      cmp rectBX
+      bcc NoCollision
+
+      ; B right edge vs A left edge
+      lda rectBX
+      clc
+      adc rectBWidth
+      cmp rectAX
+      bcc NoCollision
+
+      ; A bottom edge vs B top edge
+      lda rectAY
+      clc
+      adc rectAHeight
+      cmp rectBY
+      bcc NoCollision
+
+      ; B bottom edge vs A top edge
+      lda rectBY
+      clc
+      adc rectBHeight
+      cmp rectAY
+      bcc NoCollision
+
+      ; Failed all exemption tests meaning they DO COLLIDE
+      lda #1
+      rts
+
+  CircleCircleCollision:
+      ; Find the absolute difference between the centre X positions
+      lda circleAX
+      cmp circleBX
+      bcc CircleX_AIsLeft
+
+      sec
+      sbc circleBX
+      sta circleDX
+      jmp CircleX_Done
+
+  CircleX_AIsLeft:
+      lda circleBX
+      sec
+      sbc circleAX
+      sta circleDX
+
+  CircleX_Done:
+      ; Find the absolute difference between the centre Y positions
+      lda circleAY
+      cmp circleBY
+      bcc CircleY_AIsAbove
+
+      sec
+      sbc circleBY
+      sta circleDY
+      jmp CircleY_Done
+
+  CircleY_AIsAbove:
+      lda circleBY
+      sec
+      sbc circleAY
+      sta circleDY
+
+  CircleY_Done:
+      ; Add the radii
+      clc
+      lda circleARadius
+      adc circleBRadius
+      sta circleRadiusSum
+
+      ; If either center difference is greater than the radius sum, they can defenitely not touch
+      lda circleDX
+      cmp circleRadiusSum
+      bcc CircleDxAllowed
+      beq CircleDxAllowed
+      jmp NoCollision
+
+  CircleDxAllowed:
+      lda circleDY
+      cmp circleRadiusSum
+      bcc CircleDyAllowed
+      beq CircleDyAllowed
+      jmp NoCollision
+
+  CircleDyAllowed:
+      ; Calculate dx squared
+      lda circleDX
+      sta multiplyA
+      sta multiplyB
+      jsr Multiply8x8
+
+      lda productLow
+      sta circleDistanceLow
+      lda productHigh
+      sta circleDistanceHigh
+
+      ; Calculate dy squared and add it to dx squared
+      lda circleDY
+      sta multiplyA
+      sta multiplyB
+      jsr Multiply8x8
+
+      clc
+      lda circleDistanceLow
+      adc productLow
+      sta circleDistanceLow
+      lda circleDistanceHigh
+      adc productHigh
+      sta circleDistanceHigh
+
+      ; Calculate the square of the sum of the radii
+      lda circleRadiusSum
+      sta multiplyA
+      sta multiplyB
+      jsr Multiply8x8
+
+      ; Compare dx squared + dy squared against the square of the radius sum.
+      lda circleDistanceHigh
+      cmp productHigh
+      bcc CircleCollision
+      bne NoCollision
+
+      lda circleDistanceLow
+      cmp productLow
+      bcc CircleCollision
+      beq CircleCollision
+      jmp NoCollision
+
+  CircleCollision:
+      lda #1
+      rts
+
+  NoCollision:
+      lda #0
+      rts
+; End Collision logic
+
+; Begin Mathematics logic
+  Multiply8x8:
+	; Copy factorB into multiplicand lower 8 to be iterated and added to final product
+      lda factorB
+      sta multiplicandLower8
+      lda #0
+      sta multiplicandHigher8
+
+      ; Clear the 16-bit final product
+      sta productLower8
+      sta productHigher8
+
+      ldx #8                  ; Process all 8 bits of factorA
+
+  MultiplyLoop:
+      lsr factorA          	; Shift next bit into carry
+      bcc MultiplySkipAdd     ; If bit is 0, skip addition
+
+      clc
+      lda productLower8
+      adc multiplicandLower8
+      sta productLower8
+
+      lda productHigher8
+      adc multiplicandHigher8
+      sta productHigher8
+
+  MultiplySkipAdd:
+      asl multiplicandLower8    ; Shift working value left by one bit
+      rol multiplicandHigher8   ; Carry moves into higher byte
+
+      dex
+      bne MultiplyLoop
+      rts
+
 
 ; Input Detection
   ; Move the last parsed buttons to old
@@ -172,5 +386,3 @@ colors_end:
 	oam: .res $100					; reserve 256 bytes OAM
 
   .segment "TILES"
-
-  ;if you read this you are gay
