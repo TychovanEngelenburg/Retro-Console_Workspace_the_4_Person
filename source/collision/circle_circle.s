@@ -1,106 +1,109 @@
- CircleCircleCollision:
-      ; Find the absolute difference between the centre X positions
-      lda circleAX
-      cmp circleBX
-      bcc CircleX_AIsLeft
+.proc CircleCircleCollision
 
-      sec
-      sbc circleBX
-      sta circleDX
-      jmp CircleX_Done
+		; Find the absolute difference between the centre X positions
+		lda circleAX
+		cmp circleBX
+		bcc CircleX_AIsLeft
 
-  CircleX_AIsLeft:
-      lda circleBX
-      sec
-      sbc circleAX
-      sta circleDX
+		sec
+		sbc circleBX
+		sta circleDX
+		jmp CircleX_Done
 
-  CircleX_Done:
-      ; Find the absolute difference between the centre Y positions
-      lda circleAY
-      cmp circleBY
-      bcc CircleY_AIsAbove
+	CircleX_AIsLeft:
+		lda circleBX
+		sec
+		sbc circleAX
+		sta circleDX
 
-      sec
-      sbc circleBY
-      sta circleDY
-      jmp CircleY_Done
+	CircleX_Done:
+		; Find the absolute difference between the centre Y positions
+		lda circleAY
+		cmp circleBY
+		bcc CircleY_AIsAbove
 
-  CircleY_AIsAbove:
-      lda circleBY
-      sec
-      sbc circleAY
-      sta circleDY
+		sec
+		sbc circleBY
+		sta circleDY
+		jmp CircleY_Done
 
-  CircleY_Done:
-      ; Add the radii
-      clc
-      lda circleARadius
-      adc circleBRadius
-      sta circleRadiusSum
+	CircleY_AIsAbove:
+		lda circleBY
+		sec
+		sbc circleAY
+		sta circleDY
 
-      ; If either center difference is greater than the radius sum, they can defenitely not touch
-      lda circleDX
-      cmp circleRadiusSum
-      bcc CircleDxAllowed
-      beq CircleDxAllowed
-      jmp NoCollision
+	CircleY_Done:
+		; Add the radii
+		clc
+		lda circleARadius
+		adc circleBRadius
+		sta circleRadiusSum
 
-  CircleDxAllowed:
-      lda circleDY
-      cmp circleRadiusSum
-      bcc CircleDyAllowed
-      beq CircleDyAllowed
-      jmp NoCollision
+		; Check whether the circles can possibly touch
+		lda circleDX
+		cmp circleRadiusSum
+		bcc CircleDxAllowed
+		beq CircleDxAllowed
+		jmp NoCollision
 
-  CircleDyAllowed:
-      ; Calculate dx squared
-      lda circleDX
-      sta multiplyA
-      sta multiplyB
-      jsr Multiply8x8
+	CircleDxAllowed:
+		lda circleDY
+		cmp circleRadiusSum
+		bcc CircleDyAllowed
+		beq CircleDyAllowed
+		jmp NoCollision
 
-      lda productLow
-      sta circleDistanceLow
-      lda productHigh
-      sta circleDistanceHigh
+	CircleDyAllowed:
+		; Calculate dx squared
+		lda circleDX
+		sta factorA
+		sta factorB
+		jsr Multiply8x8
 
-      ; Calculate dy squared and add it to dx squared
-      lda circleDY
-      sta multiplyA
-      sta multiplyB
-      jsr Multiply8x8
+		lda productLower8
+		sta circleDistanceLow
+		lda productHigher8
+		sta circleDistanceHigh
 
-      clc
-      lda circleDistanceLow
-      adc productLow
-      sta circleDistanceLow
-      lda circleDistanceHigh
-      adc productHigh
-      sta circleDistanceHigh
+		; Calculate dy squared and add it to dx squared
+		lda circleDY
+		sta factorA
+		sta factorB
+		jsr Multiply8x8
 
-      ; Calculate the square of the sum of the radii
-      lda circleRadiusSum
-      sta multiplyA
-      sta multiplyB
-      jsr Multiply8x8
+		clc
+		lda circleDistanceLow
+		adc productLower8
+		sta circleDistanceLow
+		lda circleDistanceHigh
+		adc productHigher8
+		sta circleDistanceHigh
 
-      ; Compare dx squared + dy squared against the square of the radius sum.
-      lda circleDistanceHigh
-      cmp productHigh
-      bcc CircleCollision
-      bne NoCollision
+		; Calculate the square of the sum of the radii
+		lda circleRadiusSum
+		sta factorA
+		sta factorB
+		jsr Multiply8x8
 
-      lda circleDistanceLow
-      cmp productLow
-      bcc CircleCollision
-      beq CircleCollision
-      jmp NoCollision
+		; Compare dx squared + dy squared against the square of the radius sum
+		lda circleDistanceHigh
+		cmp productHigher8
+		bcc CircleCollision
+		bne NoCollision
 
-  CircleCollision:
-      lda #1
-      rts
+		lda circleDistanceLow
+		cmp productLower8
+		bcc CircleCollision
+		beq CircleCollision
+		jmp NoCollision
 
-  NoCollision:
-      lda #0
-      rts
+CircleCollision:
+	lda #1
+	rts
+
+NoCollision:
+	lda #0
+	rts
+
+.endproc
