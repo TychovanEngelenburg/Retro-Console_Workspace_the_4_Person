@@ -45,12 +45,38 @@ frameReady: .res 1
 ; =============================
 .segment "CODE"
     ; Turn off NMI and rendering.
-    .proc ppu_off
+    .proc ppu_disable
         lda #0
         sta PPUCTRL   ; NMI off
         sta PPUMASK   ; rendering off
         rts
     .endproc    ; ppu_off
+
+    .proc ppu_clear_nametable
+        bit PPUSTATUS       ; Reset PPU address latch
+
+        lda #$20
+        sta PPUADDR     ; Write high byte of address ($2000)
+        lda #$00
+        sta PPUADDR     ; Write low byte of address ($2000)
+
+        ldx #$04    ; Loop 4 times 256 bytes = 1024 bytes
+        
+        ldy #$00
+        lda #$00    
+        @ClearLoop:
+            sta PPUDATA     ; Write value to VRAM
+            
+            dey
+            bne @ClearLoop
+            
+            dex
+            bne @ClearLoop
+        ;
+
+        rts
+    .endproc ; ppu_clear_nametable
+
 
 
     .proc ppu_wait_vblank
@@ -58,19 +84,6 @@ frameReady: .res 1
         bpl ppu_wait_vblank   ; if N != 0 go to ppu_wait_vblank
         rts
     .endproc    ; ppu_wait_vblank
-
-
-    ; Move all 64 sprites in the oam buffer below the visible screen
-    .proc ppu_hide_sprites
-        lda #$ff  ; A = 255
-        ldx #0    ; X = 0
-        @hide:
-        sta oam, x    ; Sets byte x of OAM to 255
-
-        inx
-        bne @hide     ; if x != 0 loop (x wraps as unsigned byte)
-        rts
-    .endproc    ; ppu_hide_sprites
 
 
 
@@ -138,8 +151,29 @@ frameReady: .res 1
     ; =============================
     ; Call once at the beginning of each frame.
     
+
+   ; Move all 64 sprites in the oam buffer below the visible screen
+    .proc ppu_hide_sprites
+        ; TODO: rempove this afer merge. Process rename. 
+        jsr ppu_clear_oam_buffer
+        rts
+    .endproc
+
+    .proc ppu_clear_oam_buffer
+        lda #$0  ; A = 255
+        ldx #0    ; X = 0
+        @hide:
+            sta oam, x    ; Sets byte x of OAM to 255
+
+            inx
+            bne @hide     ; if x != 0 loop (x wraps as unsigned byte)
+        ;
+        rts
+    .endproc    ; ppu_hide_sprites
+
     ; Clears the old sprites and resets the next free slot.
     .proc ppu_clear_sprites
+
         jsr ppu_hide_sprites    ; Hide all current sprites
 
         lda #0              ; A = 0
@@ -149,7 +183,6 @@ frameReady: .res 1
         rts
     .endproc
     
-    
     ; Draw one sprite based on variables:
     ; spriteX     = horizontal position
     ; spriteY     = vertical position
@@ -158,6 +191,11 @@ frameReady: .res 1
     ;
     ; Each call automatically adcances to the next available OAM slot
     .proc ppu_draw_sprite
+        ; TODO: rempove this afer merge. Process rename. 
+        jsr ppu_push_sprite
+        rts
+    .endproc
+    .proc ppu_push_sprite
         lda spriteCount 
         cmp #OAM_MAX_SPRITES
         beq @done   ; if spritecount > 64 (max available in oam) do not execute
@@ -193,7 +231,7 @@ frameReady: .res 1
 
         @done:
         rts
-    .endproc    ; Draw sprite
+    .endproc    ; Push sprite
 ; End segment CODE
 
 .endif ; PPU_S
