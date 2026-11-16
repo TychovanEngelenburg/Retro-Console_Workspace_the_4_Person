@@ -1,45 +1,52 @@
+.ifndef ZEROPAGE_S
+ZEROPAGE_S = 1
+
+.segment "ZEROPAGE"
+
 ; ==========================================
 ; ZERO PAGE ($00 - $FF)
 ; Create variables and assign location in zero page
 ; ==========================================
 
 ; Collision detection
-rectAX			= $00
-rectAY			= $01
-rectAWidth		= $02
-rectAHeight		= $03
+rectAX:			.res 1
+rectAY:			.res 1
+rectAWidth:		.res 1
+rectAHeight:    .res 1
 
-rectBX			= $04
-rectBY			= $05
-rectBWidth		= $06
-rectBHeight		= $07
+rectBX:			.res 1
+rectBY:			.res 1
+rectBWidth:		.res 1
+rectBHeight:	.res 1
 
-circleAX		= $08
-circleAY		= $09
-circleARadius		= $0A
+circleAX:		.res 1
+circleAY:		.res 1
+circleARadius:	.res 1
 
-circleBX		= $0B
-circleBY		= $0C
-circleBRadius	= $0D
+circleBX:		.res 1
+circleBY:		.res 1
+circleBRadius:	.res 1
 
 ; Multiplication
-factorA			= $0E
-factorB			= $0F
-productLower8		= $10
-productHigher8		= $11
-multiplicandLower8	= $12
-multiplicandHigher8	= $13
+factorA:			    .res 1
+factorB:			    .res 1
+productLower8:		    .res 1
+productHigher8:		    .res 1
+multiplicandLower8:	    .res 1
+multiplicandHigher8:    .res 1
 
 ; Circle collision
-circleDX		= $14
-circleDY		= $15
-circleRadiusSum		= $16
-circleDistanceLow	= $17
-circleDistanceHigh	= $18
+circleDX:		    .res 1
+circleDY:		    .res 1
+circleRadiusSum:	.res 1
+circleDistanceLow:	.res 1
+circleDistanceHigh:	.res 1
 
 ; Controller
-buttons			= $19
-buttons_old		= $1A
+buttons:		.res 1
+buttons_old:    .res 1
 
 ; Graphics
-color_index		= $1B
+color_index:		.res 1
+
+.endif ; ZEROPAGE_S

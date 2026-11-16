@@ -30,3 +30,7 @@ CollisionRectangles:
       ; Failed all exemption tests meaning they DO COLLIDE
       lda #1
       rts
+
+NoCollision:
+    lda #0
+    rts
