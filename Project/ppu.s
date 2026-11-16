@@ -1,8 +1,7 @@
 .ifndef PPU_S ; Include guard
-PPU_S = 1
+.define PPU_S
 
-
-.include "constants.s"
+.include "constants.inc"
 
 .segment "ZEROPAGE"
 ; =============================
@@ -198,4 +197,4 @@ frameReady: .res 1
     .endproc    ; Draw sprite
 ; End segment CODE
 
-.endif ; Include guard
+.endif ; PPU_S

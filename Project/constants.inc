@@ -1,5 +1,5 @@
-.ifndef CONSTANTS_S ; Include guard
-CONSTANTS_S = 1
+.ifndef CONSTANTS_INC ; Include guard
+.define CONSTANTS_INC
 
 ; =============================
 ; PPU Registers
@@ -124,4 +124,4 @@ BUTTON_DOWN   = %00100000
 BUTTON_LEFT   = %01000000
 BUTTON_RIGHT  = %10000000
 
-.endif ; End include guard
+.endif ; CONSTANTS_INC

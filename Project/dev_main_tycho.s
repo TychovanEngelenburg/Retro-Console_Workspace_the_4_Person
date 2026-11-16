@@ -1,7 +1,7 @@
 .ifndef MAIN_S
-MAIN_S = 1
+.define MAIN_S
 
-.include "constants.s"
+.include "constants.inc"
 .include "ppu.s"
 .include "sprites.s"
 
@@ -356,4 +356,4 @@ MAIN_S = 1
   ;     bne MultiplyLoop
   ;     rts
 
-  .endif ; Include Guards
+  .endif ; MAIN_S
