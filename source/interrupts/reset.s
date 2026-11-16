@@ -1,17 +1,30 @@
- .ifndef RESET_S
- RESET_S = 1
+; =============================
+; This script handles the startup process.
+; So setup before the game and clearing/getting memory ready.
+;
+; Contributors: 
+; Tycho van E.
+; =============================
 
- .include "./constants.inc"
+.ifndef RESET_S
+RESET_S = 1
 
-  ; =============================
-  ; Startup process
-  ; =============================
+.include "./macros.inc"
+.include "./resources/resources.inc"
 
-; .segment "CODE"
+.include "./constants.inc"
+.include "./level/level_logic.s"
+
+
 
 .segment "STARTUP"
+  ; Unused, but needs to be defined for the build to be successful.
+; endsegment STARTUP
+
+
 
 .segment "CODE"
+
   .proc reset_handler
     sei   ; Disable IRQs
     cld   ; Disable decimal mode
@@ -59,12 +72,12 @@
     lda #0
     sta ppu_frame_ready  ; Start with no pending frame.
 
+    LOAD_LEVEL level1
+
     jsr ppu_enable  ; Turn the PPU back on
     
-
     ;;;;;;;;;;;;;;;;;;;;;;;;;;
     ; TODO: MOVE ELSEWHERE
-
     ; initial player position
     lda #100
     sta rectAX
@@ -73,6 +86,7 @@
     
     jmp MainLoop ; Automatically flows into forever
   .endproc
+
 ; endsegment CODE
 
 .endif ; RESETS_S

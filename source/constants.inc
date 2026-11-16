@@ -1,5 +1,15 @@
+; =============================
+; Simple include file holding all internal
+; constants and bit-masks.
+;
+; Contributors: 
+; Tycho van E. 
+; =============================
+
 .ifndef CONSTANTS_INC ; Include guard
 CONSTANTS_INC = 1
+
+
 
 ; =============================
 ; PPU Registers
@@ -22,8 +32,8 @@ OAMDMA    = $4014
 PPUCTRL_NAMETABLE_1         = %00000001
 PPUCTRL_NAMETABLE_2         = %00000010
 PPUCTRL_VRAM_INCREMENT_32   = %00000100
-PPUCTRL_SPRITE_PATTERN_HIGH = %00001000
-PPUCTRL_BG_PATTERN_HIGH     = %00010000
+PPUCTRL_SPRITE_TABLE_1   = %00001000
+PPUCTRL_BG_TABLE_1       = %00010000
 PPUCTRL_SPRITE_SIZE_8X16    = %00100000
 ; PPUCTRL_MASTER_SLAVE      = %01000000 DO NOT USE. This is broken.
 PPUCTRL_NMI_ENABLED         = %10000000
@@ -73,16 +83,25 @@ CONTROLLER2 = $4017
 SCREEN_WIDTH  = 255 ; CANT BE 256 DUE TO OVERFLOW!!!!!!!
 SCREEN_HEIGHT = 240
 
+SCREEN_TILE_WIDTH  = 32
+SCREEN_TILE_HEIGHT = 30
 
 
 ; =============================
-; Tile IDs
+; SPRITE IDs (Nametable 0 Id's)
 ; =============================
-TILE_EMPTY  = 0
-TILE_SQUARE = 1
-TILE_CIRCLE = 2
-TILE_SMILEY = 3
+SPRITE_EMPTY  = 0
+SPRITE_SQUARE = 1
+SPRITE_CIRCLE = 2
+SPRITE_SMILEY = 3
 
+; =============================
+; Background Tile IDs (Nametable 1 Id's)
+; =============================
+TILE_EMPTY        = 0
+TILE_WALL         = 1
+TILE_WALKABLE     = 2
+TILE_START_FINISH = 3
 
 
 ; =============================

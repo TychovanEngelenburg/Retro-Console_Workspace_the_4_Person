@@ -1,11 +1,22 @@
+; =============================
+; Include file with macros (used like C++ preprocessor defines)
+; This is mainly used for simplifying usage of interfaces.
+;
+; Contributors: 
+; Aslan Poturak, Georgi Georgiev, Tim Strobbe, Tycho van E. 
+; =============================
+
 .ifndef MAIN_S
 MAIN_S = 1
+
+
 
 ; ==========================================
 ; FILE INCLUDES
 ; ==========================================
 
 .include "constants.inc"
+.include "resources/resources.inc"
 .include "macros.inc"
 
 .include "memory/zeropage.s"
@@ -17,8 +28,8 @@ MAIN_S = 1
 .include "interrupts/nmi.s"
 
 .include "ppu.s"
-.include "sprites.s"
 .include "input.s"
+
 
 
 ; ==========================================
@@ -42,11 +53,11 @@ MAIN_S = 1
         jsr ppu_clear_oam
 
         ; Draw player sprite
-        DRAW_SPRITE rectAX, rectAY, #TILE_SQUARE, #(SPRITE_PALETTE_1)
+        DRAW_SPRITE rectAX, rectAY, #SPRITE_SQUARE, #(SPRITE_PALETTE_1)
 
         ; Draw test sprites
-        DRAW_SPRITE #160, #100, #TILE_CIRCLE, #(SPRITE_PALETTE_2)
-        DRAW_SPRITE #140, #140, #TILE_SMILEY, #(SPRITE_PALETTE_3)
+        DRAW_SPRITE #160, #100, #SPRITE_CIRCLE, #(SPRITE_PALETTE_2)
+        DRAW_SPRITE #140, #140, #SPRITE_SMILEY, #(SPRITE_PALETTE_3)
 
         jsr read_input ; read controller input and change sprite position accordingly
         

@@ -1,48 +1,57 @@
+; =============================
+; Management script that controls the ppu.
+;
+; Contributors: 
+; Tycho van E. 
+; =============================
+
 .ifndef PPU_S ; Include guard
 PPU_S = 1
 
 .include "constants.inc"
 
+
+
 .segment "ZEROPAGE"
-; =============================
-; Sprite drawing variables
-; =============================
+    ; =============================
+    ; Sprite drawing variables
+    ; =============================
 
-ppu_sprite_x:    .res 1 
-ppu_sprite_y:    .res 1
-ppu_sprite_tile: .res 1
-; spriteAttr = 
-    ; Bit 7: Vertical flip.
-    ; Bit 6: Horizontal flip.
-    ; Bit 5: Priority (0: foreground, 1: background).
-    ; Bit 2 - 4: Do not use! Set to 0.
-    ; Bit 0 - 1: 2-bit pallette Select.
-ppu_sprite_attr :   .res 1
+    ppu_sprite_x:    .res 1 
+    ppu_sprite_y:    .res 1
+    ppu_sprite_tile: .res 1
+    ppu_sprite_attr :   .res 1
 
-ppu_sprite_offset : .res 1
-ppu_sprite_count:   .res 1
+    ppu_sprite_offset : .res 1
+    ppu_sprite_count:   .res 1
 
 
 
-; =============================
-; Runtime flags
-; =============================
-ppu_frame_ready: .res 1
+    ; =============================
+    ; Background drawing variables
+    ; =============================
+    ppu_background_addr:   .res 2               
 
 
-; =============================
-; OAM
-; =============================
+
+    ; =============================
+    ; Runtime flags
+    ; =============================
+    ppu_frame_ready: .res 1
+    ppu_ppuctrl_shadow: .res 1
+; endsegment ZEROPAGE
+
+
 .segment "OAM"
+    ; =============================
+    ; Define oam buffer for sprite writing
+    ; =============================
     .export oam
     oam: .res $100  ; sprite buffer, copied to the PPU by ppu_oam_dma
 ; End segment OAM
 
 
 
-; =============================
-; CODE
-; =============================
 .segment "CODE"
     ; Turn off NMI and rendering.
     .proc ppu_disable
@@ -99,6 +108,7 @@ ppu_frame_ready: .res 1
         
         ldx #0    ; X = 0 
         @loop:
+
         ; Write pallate data at index x to PPUdata
         lda palette_data, x
         sta PPUDATA
@@ -121,16 +131,21 @@ ppu_frame_ready: .res 1
         sta PPUSCROLL     ; Reset scroll Y to 0
 
         ; Load PPUCTL masks from constants.s into PPUMASK
-        lda #(PPUCTRL_NMI_ENABLED)
+        lda #(PPUCTRL_NMI_ENABLED | PPUCTRL_BG_TABLE_1)
+        sta ppu_ppuctrl_shadow
         sta PPUCTRL
 
         ; Load PPUMASK masks from constants.s into PPUMASK
-        lda #(PPUMASK_SHOW_SPRITES | PPUMASK_SHOW_BACKGROUND)
+        lda #(PPUMASK_SHOW_SPRITES | PPUMASK_SHOW_BACKGROUND | PPUMASK_SHOW_BG_LEFT)
         sta PPUMASK
         rts
     .endproc    ; ppu_enable
 
 
+
+    ; =============================
+    ; Sprite drawing and OAM
+    ; =============================
 
     ; Move all 64 sprites in the oam buffer below the visible screen
     .proc ppu_clear_oam
@@ -160,20 +175,6 @@ ppu_frame_ready: .res 1
     .endproc
 
 
-
-    ; Copy OAM buffer to PPU. 
-    ; Call at the start of nmi
-    .proc ppu_oam_dma
-        lda #$00      ; Set OAMADDR to 0   
-        sta OAMADDR   
-
-        lda #>oam  ; Set OAMDMA to high byte OAM 
-        sta OAMDMA
-
-        rts
-    .endproc    ; ppu_oam_dma
-
-    
     
     ; Draw one sprite based on variables:
     ; spriteX     = horizontal position
@@ -218,6 +219,57 @@ ppu_frame_ready: .res 1
         @done:
         rts
     .endproc    ; Push sprite
+
+
+
+    ; Copy OAM buffer to PPU. 
+    ; Call at the start of nmi
+    .proc ppu_oam_dma
+        lda #$00      ; Set OAMADDR to 0   
+        sta OAMADDR   
+
+        lda #>oam  ; Set OAMDMA to high byte OAM 
+        sta OAMDMA
+
+        rts
+    .endproc    ; ppu_oam_dma
+
+
+
+    ; =============================
+    ; Background drawing and Nametables
+    ; =============================
+
+    ; Before calling: 
+    ;   lvl_selected_addr must point at the level you want to draw
+    ;   Turn off ppu (jsr ppu_disable). Do not forget to turn it back on
+    .proc load_level_nametable
+        ; Set PPUADDR to $2000 to write nametable
+        bit PPUSTATUS     ; Reset PPUADR latch
+        lda #$20        ; Write high byte
+        sta PPUADDR     ;
+        lda #$00        ; Write low byte
+        sta PPUADDR     
+
+        ldx #4 ; page count left to copy; 4 x 256 = 1024
+        ldy #0                 
+        @copy:
+            lda (ppu_background_addr), y    ; read one byte from ROM at loaded_level_addr + Y
+            sta PPUDATA                     ; Write it to the PPU; the PPU address then moves up by 1
+            
+            iny         ; Next byte in this page
+            bne @copy   ; Y wraps to 0 after 256 bytes; until then keep copying
+            
+            inc ppu_background_addr + 1  ; Increase address with 256 bytes
+            
+            dex       ; Pages left (x) -= 1                   
+            bne @copy ; If x != 0 
+        ;
+
+        rts                        
+    .endproc ; load_level
+
 ; End segment CODE
+
 
 .endif ; PPU_S
