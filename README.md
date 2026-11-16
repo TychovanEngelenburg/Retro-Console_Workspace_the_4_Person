@@ -3,13 +3,13 @@
 ## Credits:
 
 ### Project
-- ADD NAMES
+- 
 
 ### Setup and build process
-- Yannick Ruijter
-- Arno Buyckx
-- Ismail Akçekaya
-- Dan Runiskovs
+- Georgi Georgiev
+- Aslan Poturak
+- Tim Strobbe
+- Tycho Van Engelenburg
 
 ## Introduction
 
