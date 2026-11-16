@@ -1,5 +1,5 @@
 .ifndef CONSTANTS_INC ; Include guard
-.define CONSTANTS_INC
+CONSTANTS_INC = 1
 
 ; =============================
 ; PPU Registers

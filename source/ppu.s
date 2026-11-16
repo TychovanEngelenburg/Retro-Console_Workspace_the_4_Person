@@ -1,5 +1,5 @@
 .ifndef PPU_S ; Include guard
-.define PPU_S
+PPU_S = 1
 
 .include "constants.inc"
 
@@ -40,11 +40,10 @@ frameReady: .res 1
 
 
 
-; -----------------------------------------
+; =============================
 ; CODE
-; -----------------------------------------
+; =============================
 .segment "CODE"
-
     ; Turn off NMI and rendering.
     .proc ppu_off
         lda #0

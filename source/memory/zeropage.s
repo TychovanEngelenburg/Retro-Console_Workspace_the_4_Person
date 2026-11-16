@@ -1,3 +1,6 @@
+.ifndef ZEROPAGE_S
+.define ZEROPAGE_S
+
 ; ==========================================
 ; ZERO PAGE ($00 - $FF)
 ; Create variables and assign location in zero page
@@ -43,3 +46,5 @@ buttons_old		= $1A
 
 ; Graphics
 color_index		= $1B
+
+.endif ; ZEROPAGE_S

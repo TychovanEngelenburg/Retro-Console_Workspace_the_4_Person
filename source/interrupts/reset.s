@@ -1,56 +1,62 @@
-; ==========================================
-; SYSTEM INITIALIZATION
-; ==========================================
+ .ifndef RESET_S
+ RESET_S = 1
+
+ .include "./constants.inc"
+
+  ; =============================
+  ; Startup process
+  ; =============================
+
+; .segment "CODE"
+
+.segment "STARTUP"
 
 .segment "CODE"
+  .proc reset_handler
+    sei   ; Disable IRQs
+    cld   ; Disable decimal mode
 
-reset:
-	SEI
-	CLD
+    ldx #$40
+    stx APU_FRAME                 ; disable APU frame IRQ
 
-	LDX #$40
-	STX $4017
+    ; Set stack pointer to its starting value
+    ldx #$ff  ; X = 255
+    txs       ; Stack pointer = x  
 
-	LDX #$FF
-	TXS
+    inx                           ; X = 0
+    stx APU_DMC                   ; disable DMC IRQ 
 
-	INX
-	STX $2000
-	STX $2001
-	STX $4010
+    jsr ppu_off           ; Turn off the PPU       
+    jsr ppu_wait_vblank   ; Wait for vblank so nothing ppu related is happening anymore
 
-; Wait for vblank
-vblankwait1:
-	BIT $2002
-	BPL vblankwait1
+    ; Clear internal RAM. Takes a while 
+    ; TODO: make own process?
+    lda #$00 ; A = 0, all memory i nram will be set to this (X is still 0)
+    @clear_ram: 
+      sta $0000, x    ; zero page
+      ; $0100 (stack) skipped for subroutine safety
+      sta $0200, x  ; oam buffer
+      sta $0300, x  ; general RAM
+      sta $0400, x
+      sta $0500, x
+      sta $0600, x
+      sta $0700, x
+      inx
+      bne @clear_ram  ; if x != 0 continue loop (x wraps as unsigned byte)
+    ; End @clear_ram
 
-; Clear internal RAM
-clear_memory:
-	LDA #$00
-	STA $0000, X
-	STA $0100, X
-	STA $0200, X
-	STA $0300, X
-	STA $0400, X
-	STA $0500, X
-	STA $0600, X
-	STA $0700, X
+    jsr ppu_wait_vblank   ; Wait until another vblank for the PPU to be ready
+    jsr ppu_hide_sprites
+    jsr ppu_load_palette  
 
-	INX
-	BNE clear_memory
+   
+    lda #0
+    sta frameReady  ; Start with no pending frame.
 
-; Wait for vblank again
-vblankwait2:
-	BIT $2002
-	BPL vblankwait2
+    jsr ppu_enable  ; Turn the PPU back on
+    
+    jmp MainLoop ; Automatically flows into forever
+  .endproc
+; endsegment STARTUP
 
-; Enable NMI
-	LDA #%10000000
-	STA $2000
-
-; Enable sprites
-	LDA #%00010000
-	STA $2001
-
-; Enter main loop
-	JMP Main
+.endif ; RESETS_S

@@ -1,3 +1,5 @@
+.ifndef HEADER_S
+HEADER_S = 1
 ; ==========================================
 ; NES CARTRIDGE HEADER
 ; Cartridge layout metadata
@@ -16,3 +18,5 @@
 	.byte (INES_MAPPER & %11110000)		; upper mapper bits
 	.byte 0, 0, 0, 0, 0, 0, 0, 0	; additional settings which we leave as is
 ;
+
+.endif ; HEADER_S
