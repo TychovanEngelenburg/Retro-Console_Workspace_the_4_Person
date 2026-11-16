@@ -70,7 +70,7 @@ CONTROLLER2 = $4017
 ; =============================
 ; Screen Dimensions
 ; =============================
-SCREEN_WIDTH  = 256
+SCREEN_WIDTH  = 255 ; CANT BE 256 DUE TO OVERFLOW!!!!!!!
 SCREEN_HEIGHT = 240
 
 
@@ -115,13 +115,13 @@ SPRITE_PALETTE_3       = %00000011
 ; =============================
 ; Controller Button Masks
 ; =============================
-BUTTON_A      = %00000001
-BUTTON_B      = %00000010
-BUTTON_SELECT = %00000100
-BUTTON_START  = %00001000
-BUTTON_UP     = %00010000
-BUTTON_DOWN   = %00100000
-BUTTON_LEFT   = %01000000
-BUTTON_RIGHT  = %10000000
+BUTTON_A      = %10000000
+BUTTON_B      = %01000000
+BUTTON_SELECT = %00100000
+BUTTON_START  = %00010000
+BUTTON_UP     = %00001000
+BUTTON_DOWN   = %00000100
+BUTTON_LEFT   = %00000010
+BUTTON_RIGHT  = %00000001
 
 .endif ; CONSTANTS_INC
