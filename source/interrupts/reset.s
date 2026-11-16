@@ -49,7 +49,7 @@
     jsr ppu_wait_vblank   ; Wait until another vblank for the PPU to be ready
 
     ; Sprite and oam clearing
-    jsr ppu_clear_sprites
+    jsr ppu_clear_oam
     jsr ppu_load_palette  
     jsr ppu_oam_dma
 
@@ -61,8 +61,18 @@
 
     jsr ppu_enable  ; Turn the PPU back on
     
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ; TODO: MOVE ELSEWHERE
+
+    ; initial player position
+    lda #100
+    sta rectAX
+    sta rectAY
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
     jmp MainLoop ; Automatically flows into forever
   .endproc
-; endsegment STARTUP
+; endsegment CODE
 
 .endif ; RESETS_S

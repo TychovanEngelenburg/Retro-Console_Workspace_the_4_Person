@@ -132,6 +132,35 @@ frameReady: .res 1
 
 
 
+    ; Move all 64 sprites in the oam buffer below the visible screen
+    .proc ppu_clear_oam
+        lda #$0  ; A = 255
+        ldx #0    ; X = 0
+        @hide:
+            sta oam, x    ; Sets byte x of OAM to 255
+
+            inx
+            bne @hide     ; if x != 0 loop (x wraps as unsigned byte)
+        ;
+
+        jsr ppu_clear_sprite_index
+
+        rts
+    .endproc    ; ppu_hide_sprites
+
+
+
+    ; Clears the old sprites and resets the next free slot.
+    .proc ppu_clear_sprite_index
+        lda #0              ; A = 0
+        sta spriteOffset    ; Reset sprite offset
+        sta spriteCount     ; Reset sprite count
+
+        rts
+    .endproc
+
+
+
     ; Copy OAM buffer to PPU. 
     ; Call at the start of nmi
     .proc ppu_oam_dma
@@ -144,44 +173,7 @@ frameReady: .res 1
         rts
     .endproc    ; ppu_oam_dma
 
-
-
-    ; =============================
-    ; Per frame sprite drawing
-    ; =============================
-    ; Call once at the beginning of each frame.
     
-
-   ; Move all 64 sprites in the oam buffer below the visible screen
-    .proc ppu_hide_sprites
-        ; TODO: rempove this afer merge. Process rename. 
-        jsr ppu_clear_oam_buffer
-        rts
-    .endproc
-
-    .proc ppu_clear_oam_buffer
-        lda #$0  ; A = 255
-        ldx #0    ; X = 0
-        @hide:
-            sta oam, x    ; Sets byte x of OAM to 255
-
-            inx
-            bne @hide     ; if x != 0 loop (x wraps as unsigned byte)
-        ;
-        rts
-    .endproc    ; ppu_hide_sprites
-
-    ; Clears the old sprites and resets the next free slot.
-    .proc ppu_clear_sprites
-
-        jsr ppu_hide_sprites    ; Hide all current sprites
-
-        lda #0              ; A = 0
-        sta spriteOffset    ; Reset sprite offset
-        sta spriteCount     ; Reset sprite count
-
-        rts
-    .endproc
     
     ; Draw one sprite based on variables:
     ; spriteX     = horizontal position
@@ -190,11 +182,6 @@ frameReady: .res 1
     ; spriteAttr  = palette and sprite attributes
     ;
     ; Each call automatically adcances to the next available OAM slot
-    .proc ppu_draw_sprite
-        ; TODO: rempove this afer merge. Process rename. 
-        jsr ppu_push_sprite
-        rts
-    .endproc
     .proc ppu_push_sprite
         lda spriteCount 
         cmp #OAM_MAX_SPRITES
