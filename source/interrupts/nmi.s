@@ -22,7 +22,7 @@ NMI_S = 1
     jsr ppu_oam_dma  ; Copy sprite buffer to PPU.
 
     lda #1
-    sta frameReady  ; Tell main new frame ready
+    sta ppu_frame_ready   ; Tell main new frame ready
 
     pla
     tay

@@ -8,26 +8,26 @@ PPU_S = 1
 ; Sprite drawing variables
 ; =============================
 
-spriteX:    .res 1 
-spriteY:    .res 1
-spriteTile: .res 1
+ppu_sprite_x:    .res 1 
+ppu_sprite_y:    .res 1
+ppu_sprite_tile: .res 1
 ; spriteAttr = 
     ; Bit 7: Vertical flip.
     ; Bit 6: Horizontal flip.
     ; Bit 5: Priority (0: foreground, 1: background).
     ; Bit 2 - 4: Do not use! Set to 0.
     ; Bit 0 - 1: 2-bit pallette Select.
-spriteAttr :   .res 1
+ppu_sprite_attr :   .res 1
 
-spriteOffset : .res 1
-spriteCount:   .res 1
+ppu_sprite_offset : .res 1
+ppu_sprite_count:   .res 1
 
 
 
 ; =============================
 ; Runtime flags
 ; =============================
-frameReady: .res 1
+ppu_frame_ready: .res 1
 
 
 ; =============================
@@ -153,8 +153,8 @@ frameReady: .res 1
     ; Clears the old sprites and resets the next free slot.
     .proc ppu_clear_sprite_index
         lda #0              ; A = 0
-        sta spriteOffset    ; Reset sprite offset
-        sta spriteCount     ; Reset sprite count
+        sta ppu_sprite_offset    ; Reset sprite offset
+        sta ppu_sprite_count     ; Reset sprite count
 
         rts
     .endproc
@@ -180,41 +180,40 @@ frameReady: .res 1
     ; spriteY     = vertical position
     ; spriteTile  = tile index
     ; spriteAttr  = palette and sprite attributes
-    ;
     ; Each call automatically adcances to the next available OAM slot
     .proc ppu_push_sprite
-        lda spriteCount 
+        lda ppu_sprite_count 
         cmp #OAM_MAX_SPRITES
         beq @done   ; if spritecount > 64 (max available in oam) do not execute
 
-        ldx spriteOffset    ; Get the next OAM slot
+        ldx ppu_sprite_offset    ; Get the next OAM slot
 
         ; Write Y position
         ; The way OAM works y needs to be subtracted 1
-        lda spriteY     ; Load sprite y
+        lda ppu_sprite_y     ; Load sprite y
         sec             ; Set carry so no borrow possible
         sbc #1          ; Move sprite up 1
         sta oam + OAM_Y, x      ; Write byte to current sprite
 
         ; Write tile index.
-        lda spriteTile
+        lda ppu_sprite_tile
         sta oam + OAM_TILE, x
 
         ; Write attributes.
-        lda spriteAttr
+        lda ppu_sprite_attr
         sta oam + OAM_ATTRIBUTES, x
 
         ; Write X position
-        lda spriteX
+        lda ppu_sprite_x
         sta oam + OAM_X, x        
 
         ; Advance to the next slot.
-        lda spriteOffset        ; Get sprite offset
+        lda ppu_sprite_offset   ; Get sprite memory offset
         clc                     ; Clear any previously set carry
-        adc #OAM_SPRITE_SIZE     ; Sprite offset += 4
-        sta spriteOffset        ; Store new offset
+        adc #OAM_SPRITE_SIZE    ; Sprite offset += 4
+        sta ppu_sprite_offset   ; Store new offset
 
-        inc spriteCount     ; Add newly drawn sprite to count
+        inc ppu_sprite_count    ; Add newly drawn sprite to count
 
         @done:
         rts

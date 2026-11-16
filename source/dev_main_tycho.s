@@ -1,73 +1,57 @@
 .ifndef MAIN_S
 MAIN_S = 1
 
+; ==========================================
+; FILE INCLUDES
+; ==========================================
+
+.include "constants.inc"
+.include "macros.inc"
+
+.include "memory/zeropage.s"
+
 .include "cartridge/header.s"
 .include "cartridge/vectors.s"
 
 .include "interrupts/reset.s"
 .include "interrupts/nmi.s"
 
-
-.include "constants.inc"
 .include "ppu.s"
 .include "sprites.s"
+.include "input.s"
 
+
+; ==========================================
+; MAIN GAME LOOP
+; ==========================================
 .segment "CODE"
 
-  ; =============================
-  ; Update Loop
-  ; =============================  
-  .proc MainLoop
-    @wait:
-      ; Wait for NMI to signal the next frame
-      lda frameReady
-      beq @wait
-    ;
-    ; Reset next frame flag
-    lda #0
-    sta frameReady
+    .proc MainLoop
+        ; Update game logic
+        @wait:
+            ; Wait for NMI to signal the next frame.
+            lda ppu_frame_ready
+            beq @wait
+        ;
 
-    ; Prepare the OAM buffer
-    jsr ppu_clear_sprites
+        ; Consume the frame signal.
+        lda #0
+        sta ppu_frame_ready
 
-    ; Draw sprite 1.
-    lda #120
-    sta spriteX
-    lda #100
-    sta spriteY
-    lda #TILE_SQUARE
-    sta spriteTile
-    lda #(SPRITE_PALETTE_1)
-    sta spriteAttr
-    jsr ppu_draw_sprite
+        ; Prepare the OAM buffer.
+        jsr ppu_clear_oam
 
+        ; Draw player sprite
+        DRAW_SPRITE rectAX, rectAY, #TILE_SQUARE, #(SPRITE_PALETTE_1)
 
-    ; Draw sprite 2.
-    lda #160    ; Decimal Xpos
-    sta spriteX
-    lda #100    ; Decimal Ypos
-    sta spriteY
-    lda #TILE_CIRCLE
-    sta spriteTile ; Decimal Xpos
-    lda #(SPRITE_PALETTE_2)
-    sta spriteAttr
-    jsr ppu_draw_sprite
+        ; Draw test sprites
+        DRAW_SPRITE #160, #100, #TILE_CIRCLE, #(SPRITE_PALETTE_2)
+        DRAW_SPRITE #140, #140, #TILE_SMILEY, #(SPRITE_PALETTE_3)
 
-
-    ; Draw sprite 3.
-    lda #140  ; Set X-position
-    sta spriteX
-    lda #140  ; Set Y-position
-    sta spriteY
-    lda #TILE_SMILEY ; Set Tile index
-    sta spriteTile
-    lda #(SPRITE_PALETTE_3) ; Set sprite attributes
-    sta spriteAttr
-    jsr ppu_draw_sprite
-
-    jmp @wait
-
-  .endproc  ; MainLoop 
+        jsr read_input ; read controller input and change sprite position accordingly
+        
+        jmp MainLoop
+    .endproc
 
 ; endsegment CODE
 

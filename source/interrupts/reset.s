@@ -57,7 +57,7 @@
     jsr ppu_clear_nametable
    
     lda #0
-    sta frameReady  ; Start with no pending frame.
+    sta ppu_frame_ready  ; Start with no pending frame.
 
     jsr ppu_enable  ; Turn the PPU back on
     

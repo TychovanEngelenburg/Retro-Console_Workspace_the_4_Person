@@ -6,6 +6,8 @@ MAIN_S = 1
 ; ==========================================
 
 .include "constants.inc"
+.include "macros.inc"
+
 .include "memory/zeropage.s"
 
 .include "cartridge/header.s"
@@ -28,51 +30,23 @@ MAIN_S = 1
         ; Update game logic
         @wait:
             ; Wait for NMI to signal the next frame.
-            lda frameReady
+            lda ppu_frame_ready
             beq @wait
         ;
 
         ; Consume the frame signal.
         lda #0
-        sta frameReady
+        sta ppu_frame_ready
 
         ; Prepare the OAM buffer.
         jsr ppu_clear_oam
 
-        ; Draw sprite 1.
-        lda rectAX
-        sta spriteX
-        lda rectAY
-        sta spriteY
-        lda #TILE_SQUARE
-        sta spriteTile
-        lda #(SPRITE_PALETTE_1)
-        sta spriteAttr
-        jsr ppu_push_sprite
+        ; Draw player sprite
+        DRAW_SPRITE rectAX, rectAY, #TILE_SQUARE, #(SPRITE_PALETTE_1)
 
-
-        ; Draw sprite 2.
-        lda #160    ; Decimal Xpos
-        sta spriteX
-        lda #100    ; Decimal Ypos
-        sta spriteY
-        lda #TILE_CIRCLE
-        sta spriteTile ; Decimal Xpos
-        lda #(SPRITE_PALETTE_2)
-        sta spriteAttr
-        jsr ppu_push_sprite
-
-
-        ; Draw sprite 3.
-        lda #140  ; Set X-position
-        sta spriteX
-        lda #140  ; Set Y-position
-        sta spriteY
-        lda #TILE_SMILEY ; Set Tile index
-        sta spriteTile
-        lda #(SPRITE_PALETTE_3) ; Set sprite attributes
-        sta spriteAttr
-        jsr ppu_push_sprite
+        ; Draw test sprites
+        DRAW_SPRITE #160, #100, #TILE_CIRCLE, #(SPRITE_PALETTE_2)
+        DRAW_SPRITE #140, #140, #TILE_SMILEY, #(SPRITE_PALETTE_3)
 
         jsr read_input ; read controller input and change sprite position accordingly
         
