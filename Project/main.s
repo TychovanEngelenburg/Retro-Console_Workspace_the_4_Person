@@ -34,7 +34,32 @@
 buttons     = $00   ; Buttons held this frame
 buttons_old = $01   ; Buttons held the previous frame
 
-color_index = $02   ; Which color entry is selected
+
+
+; =============================
+; Startup process
+; =============================
+
+; =============================
+; Game states
+; =============================
+
+STATE_TITLE     = 0
+STATE_PLAYING   = 1
+STATE_DEAD      = 2
+STATE_GAME_OVER = 3
+
+; =============================
+; Game variables
+; =============================
+
+game_state    = $03
+current_level = $04
+level_start_x = $05
+level_start_y = $06
+lives         = $07
+
+STARTING_LIVES = 3
 
 ; =============================
 ; Startup process
@@ -116,57 +141,261 @@ nmi:
     rol buttons       ; shift carry into buttons
     bcc @read_input   ; if carry == 0
 
-  ; Check if A was pressed this frame specifically
+; =============================
+; Game state handling
+; =============================
+
+; Check current state
+lda game_state
+
+cmp #STATE_TITLE
+bne :+
+jmp @title_state
+:
+
+cmp #STATE_PLAYING
+bne :+
+jmp @playing_state
+:
+
+cmp #STATE_DEAD
+bne :+
+jmp @dead_state
+:
+
+cmp #STATE_GAME_OVER
+bne :+
+jmp @game_over_state
+:
+
+jmp @state_done
+; =============================
+; TITLE STATE
+; =============================
+
+@title_state:
+
+    ; Check if START was newly pressed
+    lda buttons_old
+    eor #$ff
+    and buttons
+    and #%00010000
+    beq @state_done
+
+    ; Start the game
+    lda #0
+    sta current_level
+
+    lda #STARTING_LIVES
+    sta lives
+
+    jsr LoadLevel
+
+    lda #STATE_PLAYING
+    sta game_state
+
+    jmp @state_done
+; END @title_state
+
+; =============================
+; PLAYING STATE
+; =============================
+
+@playing_state:
+
+  ;check if B is pressed (should be the 6th bit in our controller variable)
   lda buttons_old
-  eor #$ff        ; Invert: 1 = not held last frame
-  and buttons     ; Keep only buttons that are held
-  and #%10000000  ; Keep only bit 7 (A button)
-  beq @no_a       ; if a == 0
+  eor #$ff
+  and buttons
+  and #%01000000
+  beq @check_next_level
+
+  ;player died
+  dec lives 
+  lda lives
+  beq @go_game_over
+
+  ;lives remain -> enter death state
+  lda #STATE_DEAD
+  sta game_state
+  jmp @state_done
+
+  @go_game_over:
+    lda #STATE_GAME_OVER
+    sta game_state
+    jmp @state_done
 
 
-; Input handling
-  ; On A down:
-  inc color_index   ; Select next colour
+  @check_next_level:
+    ; A = next level (temporary for now, due to testign purposes)
+    lda buttons_old
+    eor #$ff
+    and buttons
+    and #%10000000
+    beq @state_done
 
-  lda color_index
-  cmp #6  
-  bcc @store  ; If color_index < 6
+    inc current_level
+    lda current_level
+    cmp #3
+    bcc @load_next_level
+    
+    ; after level 3 we go back to 1
+    lda #0
+    sta current_level
 
-  lda #0  ; Reset color index to 0
-  @store:
-    sta color_index
-
-@no_a:
-
-
-; Drawing: write the chosen colour to $3F00 (the universal background colour)
-  lda $2002   ; Reading this resets the PPU address latch
-
-  ; store PPU adress -> $3F00 (start of palette RAM)
-  lda #$3f
-  sta $2006   ; Write high byte PPU adress
-  lda #$00
-  sta $2006   ; Write low byte PPU adress 
-
-  ; Get color from list
-  ldx color_index     
-  lda colors, x   ; select color in list
-  sta $2007       ; Write it to $3F00 
-
-  lda #0      ; Reset A
-  sta $2005   ; Reset scrolling X
-  sta $2005   ; Reset scrolling
-  rti
+  @load_next_level:
+    jsr LoadLevel
+    jmp @state_done
 
 
-colors:
-  .byte $2a   ; green
-  .byte $16   ; red
-  .byte $12   ; blue
-  .byte $28   ; yellow
-  .byte $30   ; white
-  .byte $0f   ; black
-colors_end:
+; =============================
+; DEAD STATE
+; =============================
+
+@dead_state:
+
+  ;press Start to retry current level
+  lda buttons_old
+  eor #$ff
+  and buttons
+  and #%00010000
+  beq @state_done
+
+  ;Reload Current Level
+  jsr LoadLevel
+
+  lda #STATE_PLAYING
+  sta game_state
+
+  jmp @state_done
+
+
+; =============================
+; GAME OVER STATE
+; =============================
+
+@game_over_state:
+
+    ; Press START to begin a new game
+    lda buttons_old
+    eor #$ff
+    and buttons
+    and #%00010000
+    bne :+
+    jmp @state_done
+:
+
+    ; Reset level and lives
+    lda #0
+    sta current_level
+
+    lda #STARTING_LIVES
+    sta lives
+
+    jsr LoadLevel
+
+    lda #STATE_PLAYING
+    sta game_state
+
+    jmp @state_done
+
+@state_done:
+    ; Reset PPU address latch
+    lda $2002
+
+    ; Set PPU address to $3F00
+    lda #$3f
+    sta $2006
+
+    lda #$00
+    sta $2006
+;END @state_done
+
+; =============================
+; DRAW BACKGROUND BASED ON STATE
+; =============================
+
+    lda game_state
+
+    cmp #STATE_TITLE
+    beq @draw_title
+
+    cmp #STATE_PLAYING
+    beq @draw_level
+
+    cmp #STATE_DEAD
+    beq @draw_dead
+
+    cmp #STATE_GAME_OVER
+    beq @draw_game_over
+
+    ; Fallback color
+    lda #$0f
+    jmp @write_color
+
+
+@draw_title:
+    lda #$0f          ; Black
+    jmp @write_color
+
+
+@draw_level:
+    ldx current_level
+    lda level_colors, x
+    jmp @write_color
+
+
+@draw_dead:
+    lda #$28          ; Yellow
+    jmp @write_color
+
+
+@draw_game_over:
+    lda #$30          ; White
+
+
+@write_color:
+    sta $2007
+
+    ; Reset scrolling
+    lda #0
+    sta $2005
+    sta $2005
+
+    rti
+
+
+level_colors:
+  .byte $2a   ; green for level 1
+  .byte $12   ; blue for level 2
+  .byte $16   ; red for level 3
+level_colors_end:
+
+; =============================
+; LEVEL LOADING
+; =============================
+
+LoadLevel:
+    ldx current_level
+
+    ; Load player starting position
+    lda level_start_positions_x, x
+    sta level_start_x
+
+    lda level_start_positions_y, x
+    sta level_start_y
+
+    rts
+
+
+; Temporary level data
+level_start_positions_x:
+    .byte 40, 100, 180
+
+level_start_positions_y:
+    .byte 100, 80, 120
+
+
 
 .segment "OAM"
 	oam: .res $100					; reserve 256 bytes OAM
